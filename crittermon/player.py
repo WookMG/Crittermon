@@ -1,4 +1,4 @@
-from critter import Critter
+from crittermon.critter import Critter
 class Player:
 
     def __init__(self, player_pos, name, party=[None, None, None, None, None, None]):

@@ -2,6 +2,8 @@ import csv
 from random import randint
 from math import floor
 
+from crittermon.paths import csvPath
+
 class Critter:
 
     def __init__(self, name: str, nickname="", nature=["Attack", "Attack"], shiny=False):
@@ -33,7 +35,7 @@ class Critter:
         self.shiny = shiny
         self.level = 100
         
-        with open("metadata_pokemon.csv", newline='') as csvfile:
+        with open(csvPath("metadata_pokemon.csv"), newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
                 if (row["name"] == self.name):

@@ -1,9 +1,8 @@
 import sys
-import time
 from pynput import keyboard
 from rich.markup import escape
 
-from summary import Summary
+from crittermon.summary import Summary
 
 class World:
 

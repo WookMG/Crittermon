@@ -1,12 +1,9 @@
-import sys
-import time
-import termios
 from pynput import keyboard
 from rich.console import Console
 
-from player import Player
-from world import World
-from critter import Critter
+from crittermon.player import Player
+from crittermon.world import World
+from crittermon.critter import Critter
 
 '''
 *** Implementations/TO DO! ***

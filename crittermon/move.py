@@ -1,11 +1,12 @@
 import csv
+from crittermon.paths import csvPath
 
 class Move:
 
     def __init__(self, name):
         self.name = name
 
-        with open("metadata_pokemon_moves.cvs", newline='') as csvfile:
+        with open(csvPath("metadata_pokemon_moves.cvs"), newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
                 if row["name"].lower() == name.lower(): 
