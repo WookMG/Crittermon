@@ -15,6 +15,7 @@ Nature = Literal[
     "Quiet", "Quirky", "Rash", "Relaxed",
     "Sassy", "Serious", "Timid"
 ]
+
 NATURES: dict[str, tuple[str, str]] = {
     "Adamant": ("attack", "sp_attack"),
     "Bashful": ("sp_attack", "sp_attack"),
@@ -95,7 +96,10 @@ class Critter:
                 }
         
         #shiny
-        self.shiny = shiny
+        if not shiny:
+            self.shiny = (randint(1, 999) == 1)
+        else:
+            self.shiny = shiny
 
         #moves
         self.moves = [None, None, None, None]

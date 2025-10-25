@@ -64,7 +64,7 @@ class InputManager:
         }
 
     def _fightKeymap(self):
-        return {} if not self.fight else {}
+        return {} if not self.state else {}
 
     def _confirmKeymap(self):
         return {} if not self.state else {

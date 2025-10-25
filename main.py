@@ -8,10 +8,10 @@ from crittermon.critter import Critter
 '''
 *** Implementations/TO DO! ***
 - Overworld (DONE)
-- Pausing / Menu (DONE)
+- Pausing / Menu (DONE (NEED TO FINISH SAVING))
 - Creatures (DONE)
-- Party Summary (Mainly Done)
-- Encounters
+- Party Summary (DONE)
+- Encounters (DONE (JUST NEED TO ADD A LOT MORE POKEMON))
 - Fighting
 - Catching
 - Starters
@@ -26,10 +26,9 @@ from crittermon.critter import Critter
 '''
 
 def main():
-    tools.gv = tools.GlobalVariables()
-
     start_pos = [10,10] #y, x instead of x, y
-    player = Player(start_pos, "Jerold")
+    tools.gv = tools.GlobalVariables(start_pos, "Jerold")
+    gv = tools.gv
 
     a_moves = ["rapid spin", "earthquake", "metal claw", "swords dance"]
     b_moves = ["substitute", None, "substitute", None]
@@ -37,10 +36,10 @@ def main():
     a = Critter("Excadrill", 100, nature="Adamant", shiny=True, moves=a_moves)
     b = Critter("Rayquaza", 100, nickname="Rayray", nature="Jolly", moves=b_moves)
 
-    player.addCritter(a)
-    player.addCritter(b)
+    gv.player.addCritter(a)
+    gv.player.addCritter(b)
 
-    world = World(player)
+    world = World()
     world.open()
 
     while True:

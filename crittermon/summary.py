@@ -31,11 +31,11 @@ TYPE_COLORS = {
 }
 class Summary:
 
-    def __init__(self, player, controller):
+    def __init__(self, controller):
         self.console = tools.gv.console
         self.input_manager = tools.gv.input_manager
-        self.player = player
-        self.party = player.party
+        self.player = tools.gv.player
+        self.party = self.player.party
 
         self.controller = controller # if we are fighting or in overworld
         self.state = "party" # 'party' / 'critter' / 'move' / 'option_party' / 'option_rename' / 'option_release'

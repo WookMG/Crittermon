@@ -1,12 +1,14 @@
 import sys
 from pynput import keyboard
 from rich.markup import escape
+from random import randint
 
 
 import crittermon.tools as tools
 from crittermon.tools import clearTerminal
 
 from crittermon.summary import Summary
+from crittermon.encounter import Encounter
 
 class World:
 
@@ -31,10 +33,10 @@ class World:
                    ["#","\\","%","%","%","%","%","%","%","%","%","\\","\\","\\","%","%","%","%","%","#"],
                    ["#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#"]]
 
-    def __init__(self, player):
+    def __init__(self):
         self.console = tools.gv.console
         self.input_manager = tools.gv.input_manager
-        self.player = player
+        self.player = tools.gv.player
         
         self.pause_menu = PauseMenu(self)
 
@@ -59,6 +61,12 @@ class World:
             return False
         return True
     
+    def isTileDangerous(self, text) -> bool:
+        dangerous = ("%")
+        if text in dangerous:
+            return True
+        return False
+
     def draw(self):
         clearTerminal()
 
@@ -108,9 +116,19 @@ class World:
             player_pos[1] >= 0 and player_pos[1] < len(self.ascii_world[0])):
             if self.isTileWalkable(self.ascii_world[player_pos[0]][player_pos[1]]):
                 self.player.player_pos = player_pos
+            if self.isTileDangerous(self.ascii_world[player_pos[0]][player_pos[1]]):
+                self.draw()
+                self.trySpawnEncounter()
+                return
     
         self.draw()
     
+    def trySpawnEncounter(self):
+        spawn = True if randint(1, 10) == 1 else False
+        if spawn:
+            encounter = Encounter(self)
+            encounter.open()
+        
     def __str__(self):
         return "world"
 
@@ -122,7 +140,7 @@ class PauseMenu():
         self.world = world
 
         self.state = 0
-        self.summary = Summary(self.world.player, self)
+        self.summary = Summary(self)
 
     def draw(self):
         clearTerminal()

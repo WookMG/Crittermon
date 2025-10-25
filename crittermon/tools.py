@@ -2,6 +2,7 @@ import sys
 import termios
 
 from crittermon.inputManager import InputManager
+from crittermon.player import Player
 from rich.console import Console
 
 def clearTerminal():
@@ -14,9 +15,11 @@ def flush_stdin():
         termios.tcflush(sys.stdin, termios.TCIFLUSH)
 
 class GlobalVariables:
-    def __init__(self):
+    def __init__(self, player_pos, player_name):
         self.input_manager = InputManager()
+        self.player = Player(player_pos, player_name)
         self.console = Console()
+        
 
 gv = None
         
