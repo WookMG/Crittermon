@@ -64,7 +64,19 @@ class InputManager:
         }
 
     def _fightKeymap(self):
-        return {} if not self.state else {}
+        return {} if not self.state else {
+            'w': lambda: self.state.move('w'),
+            's': lambda: self.state.move('s'),
+            'd': lambda: self.state.move('d'),
+            'a': lambda: self.state.move('a'),
+            'c': self.state.confirm,
+            keyboard.Key.up: lambda: self.state.move(keyboard.Key.up),
+            keyboard.Key.down: lambda: self.state.move(keyboard.Key.down),
+            keyboard.Key.right: lambda: self.state.move(keyboard.Key.right),
+            keyboard.Key.left: lambda: self.state.move(keyboard.Key.left),
+            keyboard.Key.enter: self.state.confirm,
+            keyboard.Key.esc: self.state.close
+        }
 
     def _confirmKeymap(self):
         return {} if not self.state else {

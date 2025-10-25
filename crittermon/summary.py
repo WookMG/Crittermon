@@ -5,30 +5,11 @@ from pynput import keyboard
 from prompt_toolkit import prompt
 
 import crittermon.tools as tools
-from crittermon.tools import clearTerminal, flush_stdin
+from crittermon.tools import clearTerminal, flush_stdin, typeColour
+from crittermon.tools import TYPE_COLORS
 from crittermon.confirmMenu import ConfirmMenu
 from crittermon.critter import NATURES
 
-TYPE_COLORS = {
-    "bug": "chartreuse3",
-    "dark": "grey19",
-    "dragon": "royal_blue1",
-    "electric": "yellow1",
-    "fairy": "pink1",
-    "fighting": "indian_red",
-    "fire": "orange1",
-    "flying": "sky_blue1",
-    "ghost": "dark_violet",
-    "grass": "green3",
-    "ground": "tan",
-    "ice": "light_cyan1",
-    "normal": "grey70",
-    "poison": "medium_purple3",
-    "psychic": "deep_pink1",
-    "rock": "dark_goldenrod",
-    "steel": "light_steel_blue3",
-    "water": "deep_sky_blue1",
-}
 class Summary:
 
     def __init__(self, controller):
@@ -89,10 +70,6 @@ class Summary:
                 self.closeCritterSummary()
             case "move":
                 pass
-    
-    def _typeColour(self, type: str) -> str:
-        ''' Returns a rich colour code to colour types in drawCritterSummary '''
-        return TYPE_COLORS.get(type.lower(), "bright_white")
     
     def __str__(self):
         return "summary"
@@ -332,10 +309,10 @@ class Summary:
         colour2 = ""
 
         type1 = critter.type[0]
-        colour1 = self._typeColour(type1)
+        colour1 = typeColour(type1)
         if critter.type[1]:
             type2 = critter.type[1]
-            colour2 = self._typeColour(type2)
+            colour2 = typeColour(type2)
             self.console.print(f"[bright_white]Type: [{colour1}]{type1}[/{colour1}]/[{colour2}]{type2}[/{colour2}][/bright_white]\n")
         else:
             self.console.print(f"[bright_white]Type: [{colour1}]{type1}[/{colour1}][/bright_white]\n")
@@ -438,10 +415,10 @@ class Summary:
                     f"[{colour1}]------------------------[/{colour1}]"
                     f"{indent}"
                     f"[{colour2}]------------------------[/{colour2}]\n"
-                    f"[{colour1}]|[{self._typeColour(move.type)}]{move.name}[/{self._typeColour(move.type)}]"
+                    f"[{colour1}]|[{typeColour(move.type)}]{move.name}[/{typeColour(move.type)}]"
                     f"{name_indent1}{move.cur_pp}/{move.pp}|[/{colour1}]"
                     f"{indent}"
-                    f"[{colour2}]|[{self._typeColour(move2.type)}]{move2.name}[/{self._typeColour(move2.type)}]"
+                    f"[{colour2}]|[{typeColour(move2.type)}]{move2.name}[/{typeColour(move2.type)}]"
                     f"{name_indent2}{move2.cur_pp}/{move2.pp}|[/{colour2}]\n"
                     f"[{colour1}]------------------------[/{colour1}]"
                     f"{indent}"

@@ -1,7 +1,4 @@
-from rich.console import Console
-
 import crittermon.tools as tools
-from crittermon.player import Player
 from crittermon.world import World
 from crittermon.critter import Critter
 
@@ -12,7 +9,7 @@ from crittermon.critter import Critter
 - Creatures (DONE)
 - Party Summary (DONE)
 - Encounters (DONE (JUST NEED TO ADD A LOT MORE POKEMON))
-- Fighting
+- Fighting (DONE)
 - Catching
 - Starters
 - Healing
@@ -31,10 +28,10 @@ def main():
     gv = tools.gv
 
     a_moves = ["rapid spin", "earthquake", "metal claw", "swords dance"]
-    b_moves = ["substitute", None, "substitute", None]
+    b_moves = ["substitute", "air slash", "substitute", None]
 
-    a = Critter("Excadrill", 100, nature="Adamant", shiny=True, moves=a_moves)
-    b = Critter("Rayquaza", 100, nickname="Rayray", nature="Jolly", moves=b_moves)
+    a = Critter("Excadrill", 10, nature="Adamant", shiny=True, moves=a_moves)
+    b = Critter("Rayquaza", 10, nickname="Rayray", nature="Jolly", moves=b_moves)
 
     gv.player.addCritter(a)
     gv.player.addCritter(b)
