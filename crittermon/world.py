@@ -2,6 +2,10 @@ import sys
 from pynput import keyboard
 from rich.markup import escape
 
+
+import crittermon.tools as tools
+from crittermon.tools import clearTerminal
+
 from crittermon.summary import Summary
 
 class World:
@@ -27,22 +31,14 @@ class World:
                    ["#","\\","%","%","%","%","%","%","%","%","%","\\","\\","\\","%","%","%","%","%","#"],
                    ["#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#"]]
 
-    def __init__(self, console, player, input_manager=None) -> str:
-        self.console = console
+    def __init__(self, player):
+        self.console = tools.gv.console
+        self.input_manager = tools.gv.input_manager
         self.player = player
-        self.input_manager = input_manager
+        
+        self.pause_menu = PauseMenu(self)
 
-        self.input_manager.world = self
-
-        self.menu_state = 0
-        self.summary = Summary(self.player, self.console, self.input_manager, self)
-
-    def clearTerminal(self):
-        sys.stdout.write("\033[2J\033[3J\033[H")
-        sys.stdout.write('\r\033[K')
-        sys.stdout.flush()
-
-    def getColour(self, text) -> str:
+    def getTileColour(self, text) -> str:
         coloured_text = ''
         match text:
             case "%":
@@ -57,15 +53,14 @@ class World:
                 coloured_text = 'deep_pink1'
         return coloured_text
     
-    def isWalkable(self, text) -> bool:
+    def isTileWalkable(self, text) -> bool:
         unpassables = ("~", "#")
         if text in unpassables:
             return False
         return True
     
-    def drawWorld(self):
-        self.input_manager.changeState("world")
-        self.clearTerminal()
+    def draw(self):
+        clearTerminal()
 
         player_pos = self.player.player_pos
         view_radius = 10  # how far around the player to render
@@ -83,7 +78,7 @@ class World:
                 if (x == player_pos[1] and y == player_pos[0]): #if current is player
                     line_parts.append("[bold red]O[/bold red] ")
                 else:
-                    colouredText = self.getColour(self.ascii_world[y][x]) #get colour of ascii
+                    colouredText = self.getTileColour(self.ascii_world[y][x]) #get colour of ascii
                     escaped_ascii = escape(self.ascii_world[y][x]) #escape stuff like '\\' to make sure rich works
                     line_parts.append(f"[{colouredText}]{escaped_ascii}[/{colouredText}] ")
             lines.append(''.join(line_parts))
@@ -91,7 +86,14 @@ class World:
         # Print all at once so it is not slow at printing
         self.console.print('\n'.join(lines))
 
-    def movePlayer(self, direciton):
+    def open(self):
+        self.input_manager.changeState(self)
+        self.draw()
+    
+    def openPauseMenu(self):
+        self.pause_menu.open()
+    
+    def move(self, direciton):
         player_pos = self.player.player_pos.copy()
         if direciton in ('w', keyboard.Key.up):
             player_pos[0] -= 1
@@ -104,13 +106,26 @@ class World:
         
         if (player_pos[0] >= 0 and player_pos[0] < len(self.ascii_world) and
             player_pos[1] >= 0 and player_pos[1] < len(self.ascii_world[0])):
-            if self.isWalkable(self.ascii_world[player_pos[0]][player_pos[1]]):
+            if self.isTileWalkable(self.ascii_world[player_pos[0]][player_pos[1]]):
                 self.player.player_pos = player_pos
     
-        self.drawWorld()
+        self.draw()
+    
+    def __str__(self):
+        return "world"
 
-    def drawMenu(self):
-        self.clearTerminal()
+class PauseMenu():
+
+    def __init__(self, world):
+        self.console = tools.gv.console
+        self.input_manager = tools.gv.input_manager
+        self.world = world
+
+        self.state = 0
+        self.summary = Summary(self.world.player, self)
+
+    def draw(self):
+        clearTerminal()
         options = [
             "Close Menu",
             "Party Summary",
@@ -119,7 +134,7 @@ class World:
         ]
 
         for state, option in enumerate(options):
-            if state == self.menu_state:
+            if state == self.state:
                 colour = "bright_white"
                 arrow = " <-"
             else:
@@ -127,32 +142,35 @@ class World:
                 arrow = ""
             self.console.print(f"[{colour}]{option}[/{colour}]{arrow}\n")
     
-    def moveMenu(self, key):
+    def move(self, key):
         if key in ('w', keyboard.Key.up):
-            if self.menu_state > 0:
-                self.menu_state -= 1
+            if self.state > 0:
+                self.state -= 1
         elif key in ('s', keyboard.Key.down):
-            if self.menu_state < 3:
-                self.menu_state += 1
-        self.drawMenu()
+            if self.state < 3:
+                self.state += 1
+        self.draw()
 
-    def openMenu(self):
-        self.input_manager.changeState("menu")
-        self.drawMenu()
+    def open(self):
+        self.input_manager.changeState(self)
+        self.draw()
 
-    def closeMenu(self):
-        self.drawWorld()
+    def close(self):
+        self.world.open()
+    
+    def closeSummary(self):
+        self.open()
 
-    def confirmMenu(self):
-        match self.menu_state:
+    def confirm(self):
+        match self.state:
             case 0: #close menu
-                self.closeMenu()
+                self.close()
             case 1: #summary
-                self.summary.openSummary()
+                self.summary.open()
             case 2: #save game
                 pass
             case 3: #save & exit
                 exit()
     
-    def closeSummary(self):
-        self.openMenu()
+    def __str__(self):
+        return "pause"
