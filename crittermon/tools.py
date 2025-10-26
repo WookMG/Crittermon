@@ -25,19 +25,39 @@ TYPE_COLORS = {
     "Water": "deep_sky_blue1",
 }
 
+HEALTH_COLOURS = [
+    "red",       # 0-10%
+    "red3",      # 10-20%
+    "orange_red1",  # 20-30%
+    "dark_orange",  # 30-40%
+    "orange1",      # 40-50%
+    "yellow1",      # 50-60%
+    "yellow3",      # 60-70%
+    "chartreuse3",  # 70-80%
+    "green3",       # 80-90%
+    "green1"        # 90-100%
+]
+
 def clearTerminal():
     sys.stdout.write("\033[2J\033[3J\033[H")
     sys.stdout.write('\r\033[K')
     sys.stdout.flush()
 
 def flush_stdin():
-        #Flush any pending characters in stdin (Linux/macOS)
-        termios.tcflush(sys.stdin, termios.TCIFLUSH)
+    #Flush any pending characters in stdin (Linux/macOS)
+    termios.tcflush(sys.stdin, termios.TCIFLUSH)
 
 def typeColour(type: str) -> str:
-        ''' Returns a rich colour code to colour types in drawCritterSummary '''
-        return TYPE_COLORS.get(type.lower(), "bright_white")
+    ''' Returns a rich colour code to colour types in drawCritterSummary '''
+    return TYPE_COLORS.get(type.lower(), "bright_white")
 
+def getHealthColour(current: int, maximum: int) -> str:
+    ''' Returns a rich colour code to colour a critters current hp'''
+    percent = max(0, min(current / maximum, 1))
+    index = int(percent * 10)
+    index = 9 if index == 10 else index
+
+    return HEALTH_COLOURS[index]
 class GlobalVariables:
     def __init__(self, player_pos, player_name):
         self.input_manager = InputManager()
@@ -45,7 +65,5 @@ class GlobalVariables:
 
         self.console = Console()
         
-        
-
 gv = None
         

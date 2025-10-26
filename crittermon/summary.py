@@ -3,7 +3,7 @@ from pynput import keyboard
 from prompt_toolkit import prompt
 
 import crittermon.tools as tools
-from crittermon.tools import clearTerminal, flush_stdin, typeColour
+from crittermon.tools import clearTerminal, flush_stdin, typeColour, getHealthColour
 from crittermon.infoMessage import message
 from crittermon.confirmMenu import ConfirmMenu
 from crittermon.critter import NATURES
@@ -83,12 +83,11 @@ class Summary:
             if critter != None:
                 if slot == self.selected_critter:
                     colour = "bright_white"
-                    hp_colour = "spring_green1"
                     arrow = " <-"
                 else:
                     colour = "bright_black"
-                    hp_colour = "dark_sea_green4"
                     arrow = ""
+                hp_colour = getHealthColour(critter.current_hp, critter.hp)
                 if slot % 2 == 0:
                     self.console.print(
                         f"[{colour}]{critter.getName()}[/{colour}]{arrow}\n"
@@ -268,11 +267,15 @@ class Summary:
         if critter.name == critter.nickname:
             name = f"{critter.getName()}   lvl {critter.level}"
             colour = "bright_white"
-            self.console.print(f"[{colour}]{name}[/{colour}]\n")
+            self.console.print(f"[{colour}]{name}[/{colour}]")
         else:
             name = f"{critter.getName()} ({critter.name})   lvl {critter.level}"
             colour = "bright_white"
-            self.console.print(f"[{colour}]{name}[/{colour}]\n")
+            self.console.print(f"[{colour}]{name}[/{colour}]")
+
+        # exp to next level
+        expTo = critter.getEXPToLevel()
+        self.console.print(f"EXP to next Level: [bold cyan]{expTo}[/bold cyan]\n", style="bright_white")
 
         # list type
         colour1 = ""

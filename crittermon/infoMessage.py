@@ -6,7 +6,7 @@ def message(message):
     tools.gv.input_manager.pause()
     console = tools.gv.console
 
-    console.print(message, style="bright_white")
+    console.print(f"{message} <<", style="bright_white")
     input()
 
     tools.flush_stdin()

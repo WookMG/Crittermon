@@ -116,18 +116,19 @@ class Critter:
             self.moves[i] = Move(move)
         
         #stats
-        with open(csvPath("metadata_pokemon.csv"), newline='') as csvfile:
+        with open(csvPath("pokemon.csv"), newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
                 if (row["name"] == self.name):
                     self.base_hp = int(row["hp"])
                     self.base_attack = int(row["attack"])
-                    self.base_sp_attack = int(row["special_attack"])
+                    self.base_sp_attack = int(row["sp_attack"])
                     self.base_defense = int(row["defense"])
-                    self.base_sp_defense = int(row["special_defense"])
+                    self.base_sp_defense = int(row["sp_defense"])
                     self.base_speed = int(row["speed"])
 
-                    self.type = [row["type_1"], row["type_2"]]
+                    self.capture_rate = int(row["capture_rate"])
+                    self.type = [row["type1"], row["type2"]]
                     if self.type[1] == '':
                         self.type[1] = None
                     break
@@ -151,8 +152,9 @@ class Critter:
                     self.ev_yield = [int(i) for i in self.ev_yield] #converts strings to int
 
         self.current_hp = self.hp
+        self.status = None
         self.fainted = False
-    
+        
     def getStat(self, stat):
         temp = stat
         stat = "base_" + stat
@@ -239,6 +241,9 @@ class Critter:
     def levelUp(self, new_level):
         self.level = new_level
         message(f"[bold]{self.getName()}[/bold] has leveled up to level [bold]{self.level}[/bold]")
+
+    def getEXPToLevel(self) -> int:
+        return ((self.level + 1) ** 3) - self.exp
 
 
         

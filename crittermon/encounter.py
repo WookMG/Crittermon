@@ -2,10 +2,11 @@ from random import choice
 from random import randint
 from pynput import keyboard
 from math import floor
+from rich.markup import escape
 import time
 
 import crittermon.tools as tools
-from crittermon.tools import clearTerminal, typeColour
+from crittermon.tools import clearTerminal, typeColour, getHealthColour
 from crittermon.critter import Critter
 from crittermon.summary import FightSummary
 from crittermon.infoMessage import message
@@ -46,18 +47,12 @@ EFFECTIVENESS: dict[float, str] = {
     4.0: "Supper Effective",
 }
 
-HEALTH_COLORS = [
-    "red",       # 0-10%
-    "red3",      # 10-20%
-    "orange_red1",  # 20-30%
-    "dark_orange",  # 30-40%
-    "orange1",      # 40-50%
-    "yellow1",      # 50-60%
-    "yellow3",      # 60-70%
-    "chartreuse3",  # 70-80%
-    "green3",       # 80-90%
-    "green1"        # 90-100%
-]
+BALLS: dict[int, str] = {
+    1: "Critter Ball",
+    2: "Great Ball",
+    3: "Ultra Ball",
+    4: "Master Ball"
+}
 
 MIN_LVL = 95
 MAX_LVL = 99
@@ -71,8 +66,8 @@ class Encounter:
 
         self.critter = self.chooseRandomCritter()
         #We should only get into an encounter if the player has a critter in their party
-        for critter in self.player.party: 
-            if critter:
+        for critter in self.player.party:
+            if critter and  not critter.fainted:
                 self.player_critter: Critter = critter
                 break
         
@@ -80,6 +75,7 @@ class Encounter:
         self.state = 0 # 0 = picking/fight/catch etc. | 1 = picking move | 2 = catch | 3 = attacking
         self.option = 0 # 0 = fight | 1 = summary | 2 = catch | 3 = run
         self.move_slot = 0
+        self.ball_slot = 0
 
         self.critters_involved = [self.player_critter]
 
@@ -96,8 +92,8 @@ class Encounter:
         indent1 = " " * 2 #spacing between critter name and lvl
         indent2 = " " * 30 #spacing between critters
         
-        critter_hp_colour = self.getHealthColour(critter.current_hp, critter.hp)
-        pcritter_hp_colour = self.getHealthColour(pcritter.current_hp, pcritter.hp)
+        critter_hp_colour = getHealthColour(critter.current_hp, critter.hp)
+        pcritter_hp_colour = getHealthColour(pcritter.current_hp, pcritter.hp)
 
         #Critters
         self.console.print(
@@ -161,7 +157,8 @@ class Encounter:
 
         if not move:
             self.drawAttack(enemy_move, critter, pcritter)
-            self.checkFainted(pcritter)
+            if self.checkFainted(pcritter):
+                return
         else:
             if pcritter.speed >= critter.speed:
                 self.drawAttack(move, pcritter, critter)
@@ -265,7 +262,7 @@ class Encounter:
             critter.gainEVS(evs)
 
         message("[green1]You have won the battle! Congratulations![/green1]")
-        self.controller.open() # TODO
+        self.closeEncounter()
 
     def lose(self):
         lose = True
@@ -281,9 +278,6 @@ class Encounter:
             self.controller.open() # TODO
         else:
             self.openSwitchCritter(False)
-
-    def catch(self):
-        pass
 
     def damageCalc(self, move, critter1, critter2) -> int:
         atk = critter1.attack if move.category == "Physical" else critter1.sp_attack
@@ -320,13 +314,6 @@ class Encounter:
                         case 2:
                             effectiveness *= 0    
             return effectiveness
-
-    def getHealthColour(self, current, maximum):
-        percent = max(0, min(current / maximum, 1))
-        index = int(percent * 10)
-        index = 9 if index == 10 else index
-
-        return HEALTH_COLORS[index]
 
     def chooseRandomCritter(self) -> Critter:
         critter = choice(list(IMPLEMENTED_CRITTERS.keys()))
@@ -383,7 +370,7 @@ class Encounter:
                     f"{indent}"
                     f"[{colour2}]---------------[/{colour2}]\n"
                 )
-                
+
     def moveOption(self, key):
         if key in ('w', keyboard.Key.up):
             self.option = (self.option + 2) % 4
@@ -402,7 +389,7 @@ class Encounter:
             case 1:
                 self.summary.open()
             case 2:
-                self.openCatch
+                self.openCatch()
             case 3:
                 self.run()
     
@@ -461,27 +448,198 @@ class Encounter:
         self.draw()
 
     def closeMove(self):
-        self.openOptions
+        self.openOptions()
 
     # -------------------------
     # Catch Functions
     # -------------------------
 
     def drawCatch(self):
-        pass
+        balls = { #TODO
+            1: ("Critter Balls", 50),
+            2: ("Great Balls", 50),
+            3: ("Ultra Balls", 50),
+            4: ("Master Balls", 50)
+        }
+
+        if self.ball_slot == 0:
+            self.console.print(f"Cancel <-\n", style="bright_white")
+        else:
+            self.console.print(f"Cancel\n", style="bright_black")
+
+        for ball in balls:
+            if ball == self.ball_slot:
+                colour = "bright_white"
+                arrow = " <-"
+            else:
+                colour = "bright_black"
+                arrow = ""
+            self.console.print(f"[{colour}]{balls[ball][0]} x{balls[ball][1]}{arrow}[/{colour}]\n", style="bright_white")
 
     def moveCatch(self, key):
-        pass
+        if key in ('w', keyboard.Key.up):
+            if self.ball_slot > 0:
+                self.ball_slot -= 1
+        if key in ('s', keyboard.Key.down):
+            if self.ball_slot < 4:
+                self.ball_slot += 1
+        self.draw()
 
     def confirmCatch(self):
-        pass
+        if self.ball_slot == 0:
+             self.openOptions()
+        else:
+            self.catch()
 
     def openCatch(self):
-        pass
+        self.state = 2
+        self.draw()
 
     def closeCatch(self):
-        pass
+        self.openOptions()
+
+    def drawCatching(self):
+        clearTerminal()
+        #frame 1
+        frame = [[" ","-","-","-","-","-"," "],
+                 ["/"," "," "," "," "," ","\\"],
+                 ["|"," "," ","-"," "," ","|"],
+                 ["|","-","|"," ","|","-","|"],
+                 ["|"," "," ","-"," "," ","|"],
+                 ["\\"," "," "," "," "," ","/"],
+                 [" ","-","-","-","-","-"," "]]
+        #frame 2
+        frame_right = [[" ", " ", "-", "-", "-", "-", " "],
+                       [" ", "/", " ", " ", " ", " ", "\\"],
+                       ["|", " ", " ", " ", "-", " ", "|"],
+                       ["|", "-", "-", "|", " ", "|", "|"],
+                       ["|", " ", " ", " ", "-", " ", "|"],
+                       [" ", "\\", " ", " ", " ", " ", "/"],
+                       [" ", " ", "-", "-", "-", "-", " "]]
+        #frame 3
+        frame_left =[[" ", "-", "-", "-", "-", " ", " "],
+                     ["/", " ", " ", " ", " ", "\\", " "],
+                     ["|", " ", "-", " ", " ", " ", "|"],
+                     ["|", "|", " ", "|", "-", "-", "|"],
+                     ["|", " ", "-", " ", " ", " ", "|"],
+                     ["\\", " ", "", " ", " ", "/", " "],
+                     [" ", "-", "-", "-", "-", " ", " "]]
+
+        #anim
+        for row in frame:
+            text = "".join(row)
+            text = escape(text)
+            self.console.print(f"[bright_white]{text}[/bright_white]")
+        time.sleep(0.2)
+        clearTerminal()
+        for row in frame_right:
+            text = "".join(row)
+            text = escape(text)
+            self.console.print(f"[bright_white]{text}[/bright_white]")
+        time.sleep(0.2)
+        clearTerminal()
+        for row in frame:
+            text = "".join(row)
+            text = escape(text)
+            self.console.print(f"[bright_white]{text}[/bright_white]")
+        time.sleep(0.2)
+        clearTerminal()
+        for row in frame_left:
+            text = "".join(row)
+            text = escape(text)
+            self.console.print(f"[bright_white]{text}[/bright_white]")
+        time.sleep(0.2)
+        clearTerminal()
+        for row in frame:
+            text = "".join(row)
+            text = escape(text)
+            self.console.print(f"[bright_white]{text}[/bright_white]")
+        time.sleep(0.2)
+        clearTerminal()
+        for row in frame_right:
+            text = "".join(row)
+            text = escape(text)
+            self.console.print(f"[bright_white]{text}[/bright_white]")
+        time.sleep(0.2)
+        clearTerminal()
+        for row in frame:
+            text = "".join(row)
+            text = escape(text)
+            self.console.print(f"[bright_white]{text}[/bright_white]")
+        
+    def drawCaught(self):
+        clearTerminal()
+        ball = [["✦","-","-","-","-","-","✧"],
+                 ["/"," "," "," "," "," ","\\"],
+                 ["|"," "," ","-"," "," ","|"],
+                 ["|","-","|"," ","|","-","|"],
+                 ["|"," "," ","-"," "," ","|"],
+                 ["\\"," "," "," "," "," ","/"],
+                 ["*","-","-","-","-","-"," "]]
+
+        for row in ball:
+            text = "".join(row)
+            text = escape(text)
+            self.console.print(f"[green1]{text}[/green1]")
+
+    def drawEscaped(self):
+        clearTerminal()
+        ball = [[" ","-","-","-","-","-"," "],
+                 ["/"," "," "," "," "," ","\\"],
+                 ["|"," "," "," "," "," ","|"],
+                 ["|"," "," "," "," "," ","|"],
+                 ["|"," "," "," "," "," ","|"],
+                 ["\\"," "," "," "," "," ","/"],
+                 [" ","-","-","-","-","-"," "]]
+        
+        for row in ball:
+            text = "".join(row)
+            text = escape(text)
+            self.console.print(f"[bright_black]{text}[/bright_black]")
+
+    def catch(self):
+        message(f"{self.player.name} threw a {BALLS[self.ball_slot]} at {self.critter.getName()}")
+        ball = self.ball_slot
+        base_rate = self.critter.capture_rate
+        max_hp = self.critter.hp
+        cur_hp = self.critter.current_hp
+
+        ball_bonus = 1
+        match ball:
+            case 1:
+                ball_bonus = 1
+            case 2:
+                ball_bonus = 1.5
+            case 3:
+                ball_bonus = 2
+
+        status_bonus = 1
+
+        if self.ball_slot == 4:
+            b = 10000000 # 10 million lol
+        else:
+            a = floor((((3*max_hp)-(2*cur_hp))/(3*max_hp)) * 4096 * base_rate * ball_bonus) * max((30-self.critter.level)/10, 1) * status_bonus
+            b = 65536 * ((a/1044480) ** 0.1875) #?????
+
+        catch = True
+        for i in range(0, 3):
+            shake_check = randint(0, 65535)
+            if shake_check >= b:
+                catch = False
+                break
+            self.drawCatching()
+            time.sleep(0.5)
     
+        if catch:
+            self.drawCaught()
+            message(f"{self.critter.getName()} was captured!")
+            self.player.addCritter(self.critter)
+            self.closeEncounter()
+        else:
+            self.drawEscaped()
+            message(f"{self.critter.getName()} escaped!")
+            self.getAttacked()
+
     # -------------------------
     # Run Functions
     # -------------------------

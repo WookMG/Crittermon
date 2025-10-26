@@ -124,10 +124,17 @@ class World:
         self.draw()
     
     def trySpawnEncounter(self):
-        spawn = True if randint(1, 10) == 1 else False
-        if spawn:
-            encounter = Encounter(self)
-            encounter.open()
+        canEncounter = False
+        for critter in self.player.party:
+            if critter and not critter.fainted:
+                canEncounter = True
+                break
+                
+        if canEncounter:
+            spawn = True if randint(1, 10) == 1 else False
+            if spawn:
+                encounter = Encounter(self)
+                encounter.open()
         
     def __str__(self):
         return "world"

@@ -12,6 +12,8 @@ from crittermon.critter import Critter
 - Fighting (DONE)
 - Catching
 
+- multiple "maps" and buildings
+
 - Stat raises 
 - Statuses
 - Secondary Effects
@@ -25,6 +27,7 @@ from crittermon.critter import Critter
 - Bag
 - items
 - pokemon items 
+
 - Evolution
 '''
 
@@ -33,11 +36,8 @@ def main():
     tools.gv = tools.GlobalVariables(start_pos, "Jerold")
     gv = tools.gv
 
-
-
     a_moves = ["rapid spin", "earthquake", "metal claw", "Petal Dance"]
     b_moves = ["substitute", "air slash", "substitute", None]
-
 
     a = Critter("Excadrill", 10, nature="Adamant", shiny=True, moves=a_moves)
     b = Critter("Rayquaza", 10, nickname="Rayray", nature="Jolly", moves=b_moves)
