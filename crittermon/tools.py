@@ -25,7 +25,6 @@ TYPE_COLORS = {
     "Water": "deep_sky_blue1",
 }
 
-
 def clearTerminal():
     sys.stdout.write("\033[2J\033[3J\033[H")
     sys.stdout.write('\r\033[K')
@@ -43,7 +42,9 @@ class GlobalVariables:
     def __init__(self, player_pos, player_name):
         self.input_manager = InputManager()
         self.player = Player(player_pos, player_name)
+
         self.console = Console()
+        
         
 
 gv = None

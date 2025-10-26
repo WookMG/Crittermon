@@ -1,9 +1,13 @@
 import csv
+import ast
+
 from typing import Literal
 from random import randint
 from random import choice
 from math import floor
+from math import cbrt
 
+from crittermon.infoMessage import message
 from crittermon.paths import csvPath
 from crittermon.move import Move
 
@@ -64,6 +68,7 @@ class Critter:
 
         #level
         self.level = level
+        self.exp = level ** 3
 
         #nature
         if nature:
@@ -74,7 +79,11 @@ class Critter:
         #evs / ivs
         if evs:
             self.evs = evs
+            self.total_evs = 0
+            for ev in self.evs.keys:
+                self.total_evs += self.evs[ev]
         else:
+            self.total_evs = 0
             self.evs = {
                 "hp": 0,
                 "attack": 0,
@@ -132,7 +141,17 @@ class Critter:
         self.sp_defense = self.getStat("sp_defense")
         self.speed = self.getStat("speed")
 
+        #exp and ev yield when killed
+        with open(csvPath("pokemon_exp_ev_yield.csv"), newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                if (row["name"] == self.name):
+                    self.base_exp_yield = int(row["base_exp"]) 
+                    self.ev_yield = ast.literal_eval(row["evs"]) 
+                    self.ev_yield = [int(i) for i in self.ev_yield] #converts strings to int
+
         self.current_hp = self.hp
+        self.fainted = False
     
     def getStat(self, stat):
         temp = stat
@@ -158,5 +177,69 @@ class Critter:
                 returned_stat = floor(returned_stat * 0.90)
 
         return returned_stat
+    
+    def getName(self):
+        if self.fainted:
+            if self.shiny:
+                return f"[red1]{self.nickname} ✦[/red1]"
+            else:
+                return f"[red1]{self.nickname}[/red1]"
+        else:
+            if self.shiny:
+                return f"[yellow1]{self.nickname} ✦[/yellow1]"
+            else:
+                return self.nickname
+
+    def hasFainted(self):
+        self.current_hp = 0
+        self.fainted = True
+    
+    def heal(self):
+        pass
+
+    def fullHeal(self):
+        pass
+
+    def revive(self):
+        pass
+    
+    def gainEVS(self, evs):
+        if self.total_evs < 510:
+            for i, ev in enumerate(evs):
+                match i:
+                    case 0:
+                        if self.evs["hp"] < 252:
+                            self.evs["hp"] += ev
+                    case 1:
+                        if self.evs["attack"] < 252:
+                            self.evs["attack"] += ev
+                    case 2:
+                        if self.evs["defense"] < 252:
+                            self.evs["defense"] += ev
+                    case 3:
+                        if self.evs["sp_attack"] < 252:
+                            self.evs["sp_attack"] += ev
+                    case 4:
+                        if self.evs["sp_defense"] < 252:
+                            self.evs["sp_defense"] += ev
+                    case 5:
+                        if self.evs["speed"] < 252:
+                            self.evs["speed"] += ev
+
+    def gainEXP(self, exp):
+        if self.level != 100:
+            self.exp += exp
+            if self.exp > 1000000:
+                self.exp = 1000000
+
+            old_level = self.level
+            if old_level != floor(cbrt(self.exp)):
+                self.levelUp(floor(cbrt(self.exp)))
+    
+    def levelUp(self, new_level):
+        self.level = new_level
+        message(f"[bold]{self.getName()}[/bold] has leveled up to level [bold]{self.level}[/bold]")
+
+
         
         

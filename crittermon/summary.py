@@ -1,12 +1,10 @@
-import sys
-import termios
 import time
 from pynput import keyboard
 from prompt_toolkit import prompt
 
 import crittermon.tools as tools
 from crittermon.tools import clearTerminal, flush_stdin, typeColour
-from crittermon.tools import TYPE_COLORS
+from crittermon.infoMessage import message
 from crittermon.confirmMenu import ConfirmMenu
 from crittermon.critter import NATURES
 
@@ -18,10 +16,10 @@ class Summary:
         self.player = tools.gv.player
         self.party = self.player.party
 
-        self.controller = controller # if we are fighting or in overworld
+        self.controller = controller # the class that called this summary
         self.state = "party" # 'party' / 'critter' / 'move' / 'option_party' / 'option_rename' / 'option_release'
 
-        self.selected_slot = 0
+        self.selected_critter = 0
         self.reposition_slot = 0
         self.party_option = 0
         self.move_slot = 0
@@ -69,7 +67,7 @@ class Summary:
             case "critter":
                 self.closeCritterSummary()
             case "move":
-                pass
+                self.closeMoveSummary()
     
     def __str__(self):
         return "summary"
@@ -83,48 +81,28 @@ class Summary:
         clearTerminal()
         for slot, critter in enumerate(self.party):
             if critter != None:
-                if slot == self.selected_slot:
-                    if critter.shiny:
-                        colour = "yellow1"
-                    else:
-                        colour = "bright_white"
+                if slot == self.selected_critter:
+                    colour = "bright_white"
                     hp_colour = "spring_green1"
                     arrow = " <-"
                 else:
-                    if critter.shiny:
-                        colour = "dark_goldenrod"
-                    else:
-                        colour = "bright_black"
+                    colour = "bright_black"
                     hp_colour = "dark_sea_green4"
                     arrow = ""
                 if slot % 2 == 0:
-                    if critter.shiny:
-                        self.console.print(
-                            f"[{colour}]{critter.nickname} ✦[/{colour}]{arrow}\n"
-                            f"  [{hp_colour}]{critter.current_hp}[/{hp_colour}]/{critter.hp}",
-                            end='')
-                    else:
-                        self.console.print(
-                            f"[{colour}]{critter.nickname}[/{colour}]{arrow}\n"
-                            f"  [{hp_colour}]{critter.current_hp}[/{hp_colour}]/{critter.hp}",
-                            end='')
+                    self.console.print(
+                        f"[{colour}]{critter.getName()}[/{colour}]{arrow}\n"
+                        f"  [{hp_colour}]{critter.current_hp}[/{hp_colour}]/{critter.hp}",
+                        end='')
                 else:
-                    if critter.shiny:
-                        self.console.print(
-                            f"              "
-                            f"[{colour}]{critter.nickname} ✦[/{colour}]{arrow}\n"
-                            f"                          "
-                            f"[{hp_colour}]{critter.current_hp}[/{hp_colour}]/{critter.hp}\n",
-                            end='')
-                    else:
-                        self.console.print(
-                            f"              "
-                            f"[{colour}]{critter.nickname}[/{colour}]{arrow}\n"
-                            f"                          "
-                            f"[{hp_colour}]{critter.current_hp}[/{hp_colour}]/{critter.hp}\n",
-                            end='')
+                    self.console.print(
+                        f"              "
+                        f"[{colour}]{critter.getName()}[/{colour}]{arrow}\n"
+                        f"                          "
+                        f"[{hp_colour}]{critter.current_hp}[/{hp_colour}]/{critter.hp}\n",
+                        end='')
             else:
-                if slot == self.selected_slot:
+                if slot == self.selected_critter:
                     colour = "bright_white"
                     hp_colour = "bright_white"
                     arrow = " <-"
@@ -147,22 +125,22 @@ class Summary:
 
     def openPartySummary(self):
         self.state = "party"
-        self.selected_slot = 0
+        self.selected_critter = 0
         self.drawPartySummary()
 
     def movePartySummary(self, key):
         if key in ('w', keyboard.Key.up):
-            self.selected_slot = (self.selected_slot - 2) % 6
+            self.selected_critter = (self.selected_critter - 2) % 6
         elif key in ('s', keyboard.Key.down):
-            self.selected_slot = (self.selected_slot + 2) % 6
+            self.selected_critter = (self.selected_critter + 2) % 6
         elif key in ('d', keyboard.Key.right):
-            self.selected_slot = (self.selected_slot + 1) % 6
+            self.selected_critter = (self.selected_critter + 1) % 6
         elif key in ('a', keyboard.Key.left):
-            self.selected_slot = (self.selected_slot - 1) % 6
+            self.selected_critter = (self.selected_critter - 1) % 6
         self.drawPartySummary()
     
     def confirmPartySummary(self):
-        if self.party[self.selected_slot]:
+        if self.party[self.selected_critter]:
             self.openPartyOption()
 
     # -------------------------
@@ -170,17 +148,17 @@ class Summary:
     # -------------------------
 
     def drawPartyOption(self):
-        critter = self.party[self.selected_slot]
+        critter = self.party[self.selected_critter]
         clearTerminal()
         options = [
-            f"{critter.nickname}'s Summary",
+            f"{critter.getName()}'s Summary",
             "Rename",
             "Change Position",
             "Release",
             "Close"
         ]
 
-        question = f"What would you like to do with {critter.nickname}"
+        question = f"What would you like to do with {critter.getName()}"
         self.console.print(f"[bold bright_white]{question}[/bold bright_white]\n")
         for state, option in enumerate(options):
             if state == self.party_option:
@@ -209,7 +187,7 @@ class Summary:
         self.drawPartyOption()
     
     def confirmPartyOption(self):
-        critter = self.party[self.selected_slot]
+        critter = self.party[self.selected_critter]
         match self.party_option:
             case 0: #critter summary
                 self.openCritterSummary()
@@ -220,7 +198,7 @@ class Summary:
             case 3: #release critter
                 confirm = ConfirmMenu(
                     self,
-                    f"Are you sure you want to release {critter.nickname}?",
+                    f"Are you sure you want to release {critter.getName()}?",
                     "releaseCritter",
                     "closeReleaseCritter")
             case 4: #close
@@ -228,7 +206,7 @@ class Summary:
 
     def releaseCritter(self):
         self.input_manager.changeState(self)
-        self.player.removeCritter(self.selected_slot)
+        self.player.removeCritter(self.selected_critter)
         time.sleep(0.1)
         self.openPartySummary()
     
@@ -243,8 +221,8 @@ class Summary:
 
         self.input_manager.pause()
 
-        critter = self.party[self.selected_slot]
-        new_name = prompt(f"Please enter {critter.nickname}'s new name: ", default=critter.nickname).strip()
+        critter = self.party[self.selected_critter]
+        new_name = prompt(f"Please enter {critter.getName()}'s new name: ", default=critter.nickname).strip()
 
         if not new_name:
             critter.nickname = critter.name
@@ -259,15 +237,15 @@ class Summary:
     def repositionCritter(self):
         self.state = "repositioning"
 
-        self.reposition_slot = self.selected_slot
+        self.reposition_slot = self.selected_critter
         self.drawPartySummary()
 
     def confrimRepositionCritter(self):
         critter1 = self.party[self.reposition_slot]
-        critter2 = self.party[self.selected_slot]
+        critter2 = self.party[self.selected_critter]
 
         self.party[self.reposition_slot] = critter2
-        self.party[self.selected_slot] = critter1
+        self.party[self.selected_critter] = critter1
 
         time.sleep(0.1)
         self.openPartySummary()
@@ -278,7 +256,7 @@ class Summary:
 
     def drawCritterSummary(self):
         clearTerminal()
-        critter = self.party[self.selected_slot]
+        critter = self.party[self.selected_critter]
 
         # summary
         self.console.print(
@@ -288,20 +266,12 @@ class Summary:
         
         # list nickname + (name) (if they are different)
         if critter.name == critter.nickname:
-            if critter.shiny:
-                name = f"{critter.name} ✦   [bright_white]lvl {critter.level}[/bright_white]"
-                colour = "yellow1"
-            else:
-                name = f"{critter.name}   lvl {critter.level}"
-                colour = "bright_white"
+            name = f"{critter.getName()}   lvl {critter.level}"
+            colour = "bright_white"
             self.console.print(f"[{colour}]{name}[/{colour}]\n")
         else:
-            if critter.shiny:
-                name = f"{critter.nickname} ({critter.name}) ✦   [bright_white]lvl {critter.level}[/bright_white]"
-                colour = "yellow1"
-            else:
-                name = f"{critter.nickname} ({critter.name})   lvl {critter.level}"
-                colour = "bright_white"
+            name = f"{critter.getName()} ({critter.name})   lvl {critter.level}"
+            colour = "bright_white"
             self.console.print(f"[{colour}]{name}[/{colour}]\n")
 
         # list type
@@ -391,7 +361,7 @@ class Summary:
 
     def drawMoveSummary(self):
         clearTerminal()
-        critter = self.party[self.selected_slot]
+        critter = self.party[self.selected_critter]
 
         #moves
         colour = "bright_white" if self.move_slot == 4 else "bright_black"
@@ -469,4 +439,83 @@ class Summary:
                 self.move_slot = 0
             self.move_slot = (self.move_slot + 1) % 4
         self.drawMoveSummary()
+
+class FightSummary(Summary):
+    def __init__(self, controller, critter):
+        self.console = tools.gv.console
+        self.input_manager = tools.gv.input_manager
+        self.player = tools.gv.player
+        self.party = self.player.party
+
+        self.controller = controller # the class that called this summary
+        self.state = "party" # 'party' / 'critter' / 'move' / 'option_party'
+
+        self.current_critter = critter
+        self.selected_critter = 0
+        self.party_option = 0
+        self.move_slot = 0
+
+        self.optional_switch = True
+    
+    def close(self):
+        match self.state:
+            case "party":
+                if self.optional_switch:  
+                    self.controller.closeSummary()
+            case "party_option":
+                self.closePartyOption()
+            case "critter":
+                self.closeCritterSummary()
+            case "move":
+                self.closeMoveSummary()
+                
+    def confirmPartySummary(self):
+        self.openPartyOption()
+
+    def drawPartyOption(self):
+        critter = self.party[self.selected_critter]
+        clearTerminal()
+        options = [
+            f"{critter.getName()}'s Summary",
+            "Switch",
+            "Close"
+        ]
+
+        question = f"What would you like to do with {critter.getName()}"
+        self.console.print(f"[bold bright_white]{question}[/bold bright_white]\n")
+        for state, option in enumerate(options):
+            if state == self.party_option:
+                colour = "bright_white"
+                arrow = " <-"
+            else:
+                colour = "bright_black"
+                arrow = ""
+            self.console.print(f"[{colour}]{option}[/{colour}]{arrow}\n")
+
+    def movePartyOption(self, key):
+        if key in ('w', keyboard.Key.up):
+            if self.party_option > 0:
+                self.party_option -= 1
+        elif key in ('s', keyboard.Key.down):
+            if self.party_option < 2:
+                self.party_option += 1
+        self.drawPartyOption()
+    
+    def confirmPartyOption(self):
+        match self.party_option:
+            case 0: #critter summary
+                self.openCritterSummary()
+            case 1: #switch in critter
+                selected_critter = self.party[self.selected_critter]
+                if selected_critter.fainted:
+                    message(f"You cannot switch to {selected_critter.getName()} as they are fainted!")
+                    self.closePartyOption()
+                elif self.current_critter == selected_critter:
+                    message(f"You cannot switch to {selected_critter.getName()} as they are already selected")
+                    self.closePartyOption()
+                else:
+                    self.controller.switchCritter(selected_critter, self.optional_switch)
+            case 2: #close
+                self.closePartyOption()
+        
         

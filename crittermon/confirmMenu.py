@@ -30,11 +30,11 @@ class ConfirmMenu:
             indent = " " * 6
 
         self.console.print(
-            f"[bold bright_white]{self.text}[/bold bright_white]\n\n"
+            f"{self.text}\n\n"
             f"{confirm}"
             f"{indent}"
             f"{cancel}"
-            )
+            , style="bold_white")
 
     def move(self, key):
         if key in ('a', keyboard.Key.left):
